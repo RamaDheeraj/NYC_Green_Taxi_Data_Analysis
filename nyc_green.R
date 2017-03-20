@@ -1,15 +1,11 @@
-#Question-1
 #Programmatically download and load into your favorite analytical tool the trip data for September 2015.
 nyc_green <- read.csv("C:/Users/Dheeraj/Desktop/Files/Material/Capitolone/green_tripdata_2015-09.csv")
 class(nyc_green)
 nyc_green <- data.frame(nyc_green)
-#Report how many rows and columns of data you have loaded.
 cat('There are', nrow(nyc_green), 'rows and ',ncol(nyc_green),'columns in the data')
 View(nyc_green)
 
-#Question-2
-#Plot a histogram of the number of the trip distance ("Trip Distance").
-#Report any structure you find and any hypotheses you have about that structure.
+#histogram of the number of the trip distance ("Trip Distance").
 hist(nyc_green$Trip_distance, col = "grey", main = "Distribution of Trip_distance")
 sd(nyc_green$Trip_distance)
 mean(nyc_green$Trip_distance)
@@ -24,9 +20,7 @@ length(nyc_green$Trip_distance[nyc_green$Trip_distance<=ext_outlier_cutoff])/len
 hist(nyc_green$Trip_distance[nyc_green$Trip_distance<=ext_outlier_cutoff], 
      col = "grey", main = "Distribution of Trip_distance after removing outliers")
 
-#Question-3
-#Report mean and median trip distance grouped by hour of day.
-
+# mean and median trip distance grouped by hour of day
 #installig and loading lubridate package
 install.packages("lubridate")
 library(lubridate)
@@ -41,8 +35,7 @@ lines(ab$Hour,ab$Mean, type = "l", lwd=3, col = "orange")
 text(8,4,"Mean")
 text(8.5,2.6,"Median")
 
-#We'd like to get a rough sense of identifying trips that originate or terminate at one of the NYC area airports. 
-#Can you provide a count of how many transactions fit this criteria, the average fair, and any other interesting characteristics of these trips.
+#Identifying trips that originate or terminate at one of the NYC area airports. 
 jfk<-nyc_green[(Dropoff_latitude < 40.660 & Dropoff_latitude > 40.635 & Dropoff_longitude < -73.775 & Dropoff_longitude > -73.815)|
                  (Pickup_latitude < 40.660 & Pickup_latitude > 40.635 & Pickup_longitude < -73.775 & Pickup_longitude > -73.815),] 
 
@@ -58,16 +51,12 @@ plot(trips$`Hour of the day`,trips$`Number of trips`, type = "l", lwd=3, col = "
 detach(nyc_green)#detaching nyc_green
 
 
-#Question-4
-#Build a derived variable for tip as a percentage of the total fare.
-
+#derived variable for tip as a percentage of the total fare.
 nyc_green$tip_pct<-ifelse(nyc_green$Tip_amount==0.00 | nyc_green$Total_amount==0.00 ,
                           0.00,round((nyc_green$Tip_amount/nyc_green$Total_amount)*100,2))
 
-#Build a predictive model for tip as a percentage of the total fare. 
-#Use as much of the data as you like (or all of it). We will validate a sample.
-
-###############data Preparation############
+#predictive model for tip as a percentage of the total fare 
+###############Data Preparation############
 
 str(nyc_green)#Structure
 
@@ -79,7 +68,6 @@ nyc_green$Trip_type <- factor(nyc_green$Trip_type)
 nyc_green$hours <- factor(nyc_green$hours)
 
 cor(nyc_green[,c(10,11,12,13,14,15,16,18,19)])#correlations
-
 
 #checking for missing values
 missing=function(ipds)
@@ -127,7 +115,6 @@ nyc_green <- nyc_green[!nyc_green$Tip_amount < 0|!nyc_green$Tolls_amount < 0|!ny
 nyc_green <- nyc_green[!nyc_green$Trip_distance %in% c(112.60,603.10),]
 #delete where tip amount is greater than fare amount
 nyc_green <- nyc_green[nyc_green$Tip_amount < nyc_green$Fare_amount,]
-
 cat("Initial number of records are 1494926, and after cleaning there are", nrow(nyc_green),"records")
 
 #creating training and testing data
@@ -171,22 +158,21 @@ library(randomForest)
 rf_model <- randomForest(tip_pct ~ VendorID+RateCodeID+Passenger_count+
                            Extra+Tolls_amount+improvement_surcharge+
                            Total_amount+Payment_type+Trip_type+hours,
-                         data = lm_train,importance=TRUE,ntree=20)
+                         data = lm_train,importance=TRUE,ntree=250)
 summary(rf_model) #Adjusted R-squared: 0.68
 predicted=predict(rf_model,lm_test)
 
 rmse <- sqrt(mean((predicted-lm_test$tip_pct)^2)) 
-rmse#4.43
+rmse
 mae <- mean(abs(lm_test$tip_pct-predicted)) 
-mae#2.33
+mae#
 
 
-#Question-5
-#Option A: Distributions
-#Build a derived variable representing the average speed over the course of a trip
+#Distributions
+#variable representing the average speed over the course of a trip
 
 attach(nyc_green)#attaching nyc_green for accessing variables by their names
-#Finding time taken for each trip
+#time taken for each trip
 time_travelled <- as.numeric(difftime(strptime(Lpep_dropoff_datetime, "%Y-%m-%d %H:%M:%S"), 
                             strptime(lpep_pickup_datetime, "%Y-%m-%d %H:%M:%S"), units = "mins"))
                               
@@ -195,9 +181,7 @@ speed <- ifelse(Trip_distance==0.00 | time_travelled==0.00,0.00,
 
 mean(speed)#15.31342
 
-#Can you perform a test to determine if the average trip speeds are materially the same in all weeks of September? 
-#If you decide they are not the same, can you form a hypothesis regarding why they differ?
-
+#test to determine if the average trip speeds are materially the same in all weeks of September? 
 day <- as.numeric(format(strptime(lpep_pickup_datetime, "%Y-%m-%d %H:%M:%S"),"%d"))#Extracting date of the trip
 week_num <- ifelse(day<=7,1,ifelse(day<= 14,2,ifelse(day<=21,3,ifelse(day<=28,4,5))))#finfing week
 avgspeed=aggregate(speed,list(week_num),mean)#Grouping speed of the trips by week 
